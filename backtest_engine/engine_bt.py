@@ -69,43 +69,51 @@ def apply_indicators(price, strategy):
     return indicators
 
 def evaluate_condition(cond: str, price: pd.Series, indicators: dict, idx: int) -> bool:
+    cond = cond.strip().lower()
+
     try:
-        if "RSI" in cond:
+        # RSI
+        rsi_match = re.search(r"rsi\((\d+)\)\s*([<>])\s*(\d+)", cond)
+        if rsi_match:
+            period = int(rsi_match.group(1))
+            op = rsi_match.group(2)
+            threshold = float(rsi_match.group(3))
             val = indicators["RSI"].iloc[idx]
-            if "<" in cond:
-                threshold = int(cond.split("<")[1].strip())
-                return val < threshold
-            elif ">" in cond:
-                threshold = int(cond.split(">")[1].strip())
-                return val > threshold
+            return val > threshold if op == ">" else val < threshold
 
-        elif "SMA" in cond:
-            if "crosses above" in cond:
-                short_period = int(cond.split("SMA(")[1].split(")")[0])
-                long_period = int(cond.split("SMA(")[2].split(")")[0])
-                short = indicators[f"SMA{short_period}"]
-                long = indicators[f"SMA{long_period}"]
-                return short.iloc[idx - 1] < long.iloc[idx - 1] and short.iloc[idx] > long.iloc[idx]
+        # MACD vs Signal
+        if "macd" in cond and "signal" in cond:
+            macd_val = indicators["MACD"].iloc[idx]
+            signal_val = indicators["Signal"].iloc[idx]
+            if ">" in cond:
+                return macd_val > signal_val
+            elif "<" in cond:
+                return macd_val < signal_val
 
-        elif "Price < Lower Bollinger Band" in cond:
-            return price.iloc[idx] < indicators["BollingerLower"].iloc[idx]
+        # Bollinger Bands
+        if "close" in cond or "price" in cond:
+            if ">" in cond and "upper" in cond:
+                return price.iloc[idx] > indicators["BollingerUpper"].iloc[idx]
+            if "<" in cond and "lower" in cond:
+                return price.iloc[idx] < indicators["BollingerLower"].iloc[idx]
 
-        elif "Price > Upper Bollinger Band" in cond:
-            return price.iloc[idx] > indicators["BollingerUpper"].iloc[idx]
-        
-        elif "MACD > Signal" in cond:
-            return indicators["MACD"].iloc[idx] > indicators["Signal"].iloc[idx]
+        # Price touches Bollinger
+        if "touches" in cond:
+            if "upper" in cond:
+                return price.iloc[idx] >= indicators["BollingerUpper"].iloc[idx]
+            if "lower" in cond:
+                return price.iloc[idx] <= indicators["BollingerLower"].iloc[idx]
 
-        elif "MACD < Signal" in cond:
-            return indicators["MACD"].iloc[idx] < indicators["Signal"].iloc[idx]
+        # SMA crossover
+        sma_cross = re.search(r"sma\((\d+)\)\s*crosses above\s*sma\((\d+)\)", cond)
+        if sma_cross:
+            short = int(sma_cross.group(1))
+            long = int(sma_cross.group(2))
+            short_sma = indicators[f"SMA{short}"]
+            long_sma = indicators[f"SMA{long}"]
+            return short_sma.iloc[idx - 1] < long_sma.iloc[idx - 1] and short_sma.iloc[idx] > long_sma.iloc[idx]
 
-        elif "price touches upper bollinger band" in cond:
-            return price.iloc[idx] >= indicators["BollingerUpper"].iloc[idx]
-
-        elif "price touches lower bollinger band" in cond:
-            return price.iloc[idx] <= indicators["BollingerLower"].iloc[idx]
-
-    except:
+    except Exception:
         return False
 
     return False

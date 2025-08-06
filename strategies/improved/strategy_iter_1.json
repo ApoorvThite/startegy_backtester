@@ -1,0 +1,18 @@
+{
+    "strategy_name": "Improved Short-Term Momentum Strategy",
+    "description": "This strategy relies on RSI, MACD, and Bollinger Bands to identify short-term momentum in the market. Entry is signaled when RSI exceeds 75, MACD crosses above its signal line, and the closing price breaks above the upper Bollinger Band. Exit is signaled when RSI drops below 25, MACD crosses below its signal line, and the closing price falls below the lower Bollinger Band.",
+    "entry_conditions": [
+        "RSI(14) > 75",
+        "MACD > Signal",
+        "Close > Upper Bollinger Band"
+    ],
+    "exit_conditions": [
+        "RSI(14) < 25",
+        "MACD < Signal",
+        "Close < Lower Bollinger Band"
+    ],
+    "stop_loss": 0.02,
+    "take_profit": 0.05,
+    "timeframe": "15m",
+    "generated_at": "2022-05-25 14:30:00"
+}
